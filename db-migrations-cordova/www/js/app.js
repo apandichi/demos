@@ -42,11 +42,39 @@ angular.module('starter', ['ionic', 'ngCordova'])
     return promise;
   };
 
+  var version2 = function() {
+    var queries = [
+      "ALTER TABLE person ADD address VARCHAR(100)",
+      "ALTER TABLE pet ADD ownerId INTEGER"
+    ];
+
+    var promise = queries.reduce(function(previous, query) {
+				LoggingService.log("chaining " + query);
+				return previous.then(function() {
+				 	LoggingService.log("executing " + query);
+					return $cordovaSQLite.execute(db, query, [])
+						.then(function(result) {
+							LoggingService.log(" done " + JSON.stringify(query));
+							return $q.when(query);
+						});
+				});
+			}, $q.when())
+			.then(function() {
+				LoggingService.log("Version 2 migration executed");
+			})
+      .catch(function(error) {
+        LoggingService.log("Error: " + JSON.stringify(error));
+      });
+
+    return promise;
+  };
+
   this.migrate = function() {
     db = $cordovaSQLite.openDB({ name: "my.db", bgType: 1 });
 
     var versionsToMigrate = [
-      version1
+      version1,
+      version2
     ];
 
     versionsToMigrate.reduce(function(current, next) {
