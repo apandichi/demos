@@ -12,16 +12,50 @@ angular.module('starter', ['ionic', 'ngCordova'])
   return this;
 })
 
-.service('DatabaseService', function($ionicPlatform, $cordovaSQLite, LoggingService) {
+.service('DatabaseService', function($ionicPlatform, $cordovaSQLite, LoggingService, $q) {
+  var db;
+
+  var version1 = function() {
+    var queries = [
+      "CREATE TABLE IF NOT EXISTS person(id INTEGER PRIMARY KEY NOT NULL, firstname VARCHAR(100), lastname VARCHAR(100))",
+      "CREATE TABLE IF NOT EXISTS pet(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(100))"
+    ];
+
+    var promise = queries.reduce(function(previous, query) {
+				LoggingService.log("chaining " + query);
+				return previous.then(function() {
+				 	LoggingService.log("executing " + query);
+					return $cordovaSQLite.execute(db, query, [])
+						.then(function(result) {
+							LoggingService.log(" done " + JSON.stringify(query));
+							return $q.when(query);
+						});
+				});
+			}, $q.when())
+			.then(function() {
+				LoggingService.log("Version 1 migration executed");
+			})
+      .catch(function(error) {
+        LoggingService.log("Error: " + JSON.stringify(error));
+      });
+
+    return promise;
+  };
+
   this.migrate = function() {
-    var db = $cordovaSQLite.openDB({ name: "my.db", bgType: 1 });
-    var query = "CREATE TABLE IF NOT EXISTS person(id INTEGER PRIMARY KEY NOT NULL, firstname VARCHAR(100), lastname VARCHAR(100))";
-    LoggingService.log("will run query " + query);
-    $cordovaSQLite.execute(db, query, []).then(function(res) {
-      LoggingService.log("created");
-    }, function (err) {
-      console.error(JSON.stringify(err));
+    db = $cordovaSQLite.openDB({ name: "my.db", bgType: 1 });
+
+    var versionsToMigrate = [
+      version1
+    ];
+
+    versionsToMigrate.reduce(function(current, next) {
+			return current.then(next);
+		}, $q.when())
+		.then(function() {
+			LoggingService.log("All migrations executed");
     });
+
   };
   return this;
 })
