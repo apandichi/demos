@@ -5,18 +5,32 @@
 // the 2nd parameter is an array of 'requires'
 angular.module('starter', ['ionic', 'ngCordova'])
 
-.service('DatabaseService', function($ionicPlatform, $cordovaSQLite) {
+.service('LoggingService', function($rootScope) {
+  this.log = function(message) {
+      $rootScope.$broadcast('log', message);
+  };
+  return this;
+})
+
+.service('DatabaseService', function($ionicPlatform, $cordovaSQLite, LoggingService) {
   this.migrate = function() {
     var db = $cordovaSQLite.openDB({ name: "my.db", bgType: 1 });
     var query = "CREATE TABLE IF NOT EXISTS person(id INTEGER PRIMARY KEY NOT NULL, firstname VARCHAR(100), lastname VARCHAR(100))";
-    console.log("will run query " + query);
+    LoggingService.log("will run query " + query);
     $cordovaSQLite.execute(db, query, []).then(function(res) {
-      console.log("created");
+      LoggingService.log("created");
     }, function (err) {
       console.error(JSON.stringify(err));
     });
   };
   return this;
+})
+
+.controller('LogController', function($scope) {
+  $scope.messages = [];
+  $scope.$on('log', function(event, data) {
+    $scope.messages.push(data);
+  });
 })
 
 .run(function($ionicPlatform, DatabaseService) {
