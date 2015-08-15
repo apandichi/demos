@@ -1,7 +1,10 @@
 {
-  "name": "HelloIonic",
+  "name": "db-migrations-cordova",
   "private": "true",
   "devDependencies": {
     "ionic": "driftyco/ionic-bower#1.1.0"
+  },
+  "dependencies": {
+    "ngCordova": "~0.1.20-alpha"
   }
 }
