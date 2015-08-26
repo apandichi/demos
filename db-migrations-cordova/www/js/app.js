@@ -61,44 +61,6 @@ angular.module('starter', ['ionic', 'ngCordova'])
     return promise;
   };
 
-  var version1 = function(currentVersion) {
-    var versionNumber = 1;
-    if (currentVersion >= versionNumber)
-				return $q.when(currentVersion);
-
-    var queries = [
-      "CREATE TABLE IF NOT EXISTS person(id INTEGER PRIMARY KEY NOT NULL, firstname VARCHAR(100), lastname VARCHAR(100))",
-      "CREATE TABLE IF NOT EXISTS pet(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(100))"
-    ];
-
-		var promise = executeInChain(queries).then(function() {
-			LoggingService.log("Version 1 migration executed");
-      return versionNumber;
-		})
-    .then(storeVersionInHistoryTable);
-
-    return promise;
-  };
-
-  var version2 = function(currentVersion) {
-    var versionNumber = 2;
-    if (currentVersion >= versionNumber)
-				return $q.when(currentVersion);
-
-    var queries = [
-      "ALTER TABLE person ADD address VARCHAR(100)",
-      "ALTER TABLE pet ADD ownerId INTEGER"
-    ];
-
-    var promise = executeInChain(queries).then(function() {
-			LoggingService.log("Version 2 migration executed");
-      return versionNumber;
-		})
-    .then(storeVersionInHistoryTable);
-
-    return promise;
-  };
-
   this.migrate = function() {
     db = $cordovaSQLite.openDB({ name: "my.db", bgType: 1 });
 
@@ -107,12 +69,44 @@ angular.module('starter', ['ionic', 'ngCordova'])
       selectCurrentVersion
     ];
 
-    var versionsToMigrate = [
+    var version1 = {
+      versionNumber: 1,
+      queries: [
+        "CREATE TABLE IF NOT EXISTS person(id INTEGER PRIMARY KEY NOT NULL, firstname VARCHAR(100), lastname VARCHAR(100))",
+        "CREATE TABLE IF NOT EXISTS pet(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(100))"
+      ]
+    };
+
+    var version2 = {
+      versionNumber: 2,
+      queries: [
+        "ALTER TABLE person ADD address VARCHAR(100)",
+        "ALTER TABLE pet ADD ownerId INTEGER"
+      ]
+    };
+
+    var versions = [
       version1,
       version2
     ];
 
-    initialSteps.concat(versionsToMigrate).reduce(function(current, next) {
+    var migrationSteps = versions.map(function(version) {
+      return function(currentVersion) {
+        if (currentVersion >= version.versionNumber)
+  				return $q.when(currentVersion);
+
+        var promise = executeInChain(version.queries).then(function() {
+    			LoggingService.log("Version "+version.versionNumber+" migration executed");
+          return version.versionNumber;
+    		})
+        .then(storeVersionInHistoryTable);
+
+        return promise;
+      };
+    });
+
+    var steps = initialSteps.concat(migrationSteps);
+    steps.reduce(function(current, next) {
 			return current.then(next);
 		}, $q.when())
 		.then(function() {
