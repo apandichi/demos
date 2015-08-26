@@ -15,6 +15,21 @@ angular.module('starter', ['ionic', 'ngCordova'])
 .service('DatabaseService', function($ionicPlatform, $cordovaSQLite, LoggingService, $q) {
   var db;
 
+  var executeInChain = function(queries) {
+    var promise = queries.reduce(function(previous, query) {
+			LoggingService.log("chaining " + query);
+			return previous.then(function() {
+        LoggingService.log("executing " + query);
+				return $cordovaSQLite.execute(db, query, [])
+					.then(function(result) {
+						LoggingService.log(" done " + JSON.stringify(query));
+						return $q.when(query);
+					});
+			});
+		}, $q.when());
+    return promise;
+  };
+
   var selectCurrentVersion = function() {
 		var query = "SELECT MAX(versionNumber) AS maxVersion FROM version_history";
 		var promise = $cordovaSQLite.execute(db, query)
@@ -43,17 +58,9 @@ angular.module('starter', ['ionic', 'ngCordova'])
       "CREATE TABLE IF NOT EXISTS version_history(versionNumber INTEGER PRIMARY KEY NOT NULL, migratedAt DATE)"
     ];
 
-    var promise = queries.reduce(function(previous, query) {
-				return previous.then(function() {
-					return $cordovaSQLite.execute(db, query, [])
-						.then(function(result) {
-							return $q.when(query);
-						});
-				});
-			}, $q.when())
-			.then(function() {
-        return versionNumber;
-			});
+    var promise = executeInChain(queries).then(function() {
+      return versionNumber;
+		});
 
     return promise;
   };
@@ -68,22 +75,12 @@ angular.module('starter', ['ionic', 'ngCordova'])
       "CREATE TABLE IF NOT EXISTS pet(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(100))"
     ];
 
-    var promise = queries.reduce(function(previous, query) {
-				LoggingService.log("chaining " + query);
-				return previous.then(function() {
-				 	LoggingService.log("executing " + query);
-					return $cordovaSQLite.execute(db, query, [])
-						.then(function(result) {
-							LoggingService.log(" done " + JSON.stringify(query));
-							return $q.when(query);
-						});
-				});
-			}, $q.when())
-			.then(function() {
-				LoggingService.log("Version 1 migration executed");
-        return versionNumber;
-			})
-      .then(storeVersionInHistoryTable);
+
+		var promise = executeInChain(queries).then(function() {
+			LoggingService.log("Version 1 migration executed");
+      return versionNumber;
+		})
+    .then(storeVersionInHistoryTable);
 
     return promise;
   };
@@ -98,22 +95,11 @@ angular.module('starter', ['ionic', 'ngCordova'])
       "ALTER TABLE pet ADD ownerId INTEGER"
     ];
 
-    var promise = queries.reduce(function(previous, query) {
-				LoggingService.log("chaining " + query);
-				return previous.then(function() {
-				 	LoggingService.log("executing " + query);
-					return $cordovaSQLite.execute(db, query, [])
-						.then(function(result) {
-							LoggingService.log(" done " + JSON.stringify(query));
-							return $q.when(query);
-						});
-				});
-			}, $q.when())
-			.then(function() {
-				LoggingService.log("Version 2 migration executed");
-        return versionNumber;
-			})
-      .then(storeVersionInHistoryTable);
+    var promise = executeInChain(queries).then(function() {
+			LoggingService.log("Version 2 migration executed");
+      return versionNumber;
+		})
+    .then(storeVersionInHistoryTable);
 
     return promise;
   };
