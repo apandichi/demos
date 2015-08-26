@@ -52,16 +52,12 @@ angular.module('starter', ['ionic', 'ngCordova'])
 	};
 
   var createVersionHistoryTable = function() {
-    var versionNumber = 0;
-
-    var queries = [
-      "CREATE TABLE IF NOT EXISTS version_history(versionNumber INTEGER PRIMARY KEY NOT NULL, migratedAt DATE)"
-    ];
-
-    var promise = executeInChain(queries).then(function() {
+    var query = "CREATE TABLE IF NOT EXISTS version_history(versionNumber INTEGER PRIMARY KEY NOT NULL, migratedAt DATE)";
+    var promise = $cordovaSQLite.execute(db, query, [])
+    .then(function() {
+      var versionNumber = 0;
       return versionNumber;
 		});
-
     return promise;
   };
 
@@ -74,7 +70,6 @@ angular.module('starter', ['ionic', 'ngCordova'])
       "CREATE TABLE IF NOT EXISTS person(id INTEGER PRIMARY KEY NOT NULL, firstname VARCHAR(100), lastname VARCHAR(100))",
       "CREATE TABLE IF NOT EXISTS pet(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(100))"
     ];
-
 
 		var promise = executeInChain(queries).then(function() {
 			LoggingService.log("Version 1 migration executed");
