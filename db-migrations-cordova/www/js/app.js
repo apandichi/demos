@@ -53,10 +53,7 @@ angular.module('starter', ['ionic', 'ngCordova'])
 			}, $q.when())
 			.then(function() {
         return versionNumber;
-			})
-      .catch(function(error) {
-        LoggingService.log("Error: " + JSON.stringify(error));
-      });
+			});
 
     return promise;
   };
@@ -85,11 +82,8 @@ angular.module('starter', ['ionic', 'ngCordova'])
 			.then(function() {
 				LoggingService.log("Version 1 migration executed");
         return versionNumber;
-			}).
-      then(storeVersionInHistoryTable)
-      .catch(function(error) {
-        LoggingService.log("Error: " + JSON.stringify(error));
-      });
+			})
+      .then(storeVersionInHistoryTable);
 
     return promise;
   };
@@ -119,10 +113,7 @@ angular.module('starter', ['ionic', 'ngCordova'])
 				LoggingService.log("Version 2 migration executed");
         return versionNumber;
 			})
-      .then(storeVersionInHistoryTable)
-      .catch(function(error) {
-        LoggingService.log("Error: " + JSON.stringify(error));
-      });
+      .then(storeVersionInHistoryTable);
 
     return promise;
   };
@@ -142,6 +133,9 @@ angular.module('starter', ['ionic', 'ngCordova'])
 		}, $q.when())
 		.then(function() {
 			LoggingService.log("All migrations executed");
+    })
+    .catch(function(error) {
+      LoggingService.log("Error: " + JSON.stringify(error));
     });
 
   };
