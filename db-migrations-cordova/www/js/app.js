@@ -102,14 +102,17 @@ angular.module('starter', ['ionic', 'ngCordova'])
   this.migrate = function() {
     db = $cordovaSQLite.openDB({ name: "my.db", bgType: 1 });
 
-    var versionsToMigrate = [
+    var initialSteps = [
       createVersionHistoryTable,
-      selectCurrentVersion,
+      selectCurrentVersion
+    ];
+
+    var versionsToMigrate = [
       version1,
       version2
     ];
 
-    versionsToMigrate.reduce(function(current, next) {
+    initialSteps.concat(versionsToMigrate).reduce(function(current, next) {
 			return current.then(next);
 		}, $q.when())
 		.then(function() {
