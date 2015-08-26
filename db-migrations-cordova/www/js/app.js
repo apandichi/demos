@@ -15,7 +15,57 @@ angular.module('starter', ['ionic', 'ngCordova'])
 .service('DatabaseService', function($ionicPlatform, $cordovaSQLite, LoggingService, $q) {
   var db;
 
-  var version1 = function() {
+  var selectCurrentVersion = function() {
+		var query = "SELECT MAX(versionNumber) AS maxVersion FROM version_history";
+		var promise = $cordovaSQLite.execute(db, query)
+			.then(function(res) {
+				var maxVersion = res.rows.item(0).maxVersion;
+				LoggingService.log("Current version is " + maxVersion);
+				return maxVersion;
+			});
+		return promise;
+	};
+
+  var storeVersionInHistoryTable = function(versionNumber) {
+		var query = "INSERT INTO version_history (versionNumber, migratedAt) VALUES (?, ?)";
+		var promise = $cordovaSQLite.execute(db, query, [versionNumber, new Date()])
+			.then(function(res) {
+				LoggingService.log("Stored version in history table: " + versionNumber);
+				return versionNumber;
+			});
+		return promise;
+	};
+
+  var createVersionHistoryTable = function() {
+    var versionNumber = 0;
+
+    var queries = [
+      "CREATE TABLE IF NOT EXISTS version_history(versionNumber INTEGER PRIMARY KEY NOT NULL, migratedAt DATE)"
+    ];
+
+    var promise = queries.reduce(function(previous, query) {
+				return previous.then(function() {
+					return $cordovaSQLite.execute(db, query, [])
+						.then(function(result) {
+							return $q.when(query);
+						});
+				});
+			}, $q.when())
+			.then(function() {
+        return versionNumber;
+			})
+      .catch(function(error) {
+        LoggingService.log("Error: " + JSON.stringify(error));
+      });
+
+    return promise;
+  };
+
+  var version1 = function(currentVersion) {
+    var versionNumber = 1;
+    if (currentVersion >= versionNumber)
+				return $q.when(currentVersion);
+
     var queries = [
       "CREATE TABLE IF NOT EXISTS person(id INTEGER PRIMARY KEY NOT NULL, firstname VARCHAR(100), lastname VARCHAR(100))",
       "CREATE TABLE IF NOT EXISTS pet(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(100))"
@@ -34,7 +84,9 @@ angular.module('starter', ['ionic', 'ngCordova'])
 			}, $q.when())
 			.then(function() {
 				LoggingService.log("Version 1 migration executed");
-			})
+        return versionNumber;
+			}).
+      then(storeVersionInHistoryTable)
       .catch(function(error) {
         LoggingService.log("Error: " + JSON.stringify(error));
       });
@@ -42,7 +94,11 @@ angular.module('starter', ['ionic', 'ngCordova'])
     return promise;
   };
 
-  var version2 = function() {
+  var version2 = function(currentVersion) {
+    var versionNumber = 2;
+    if (currentVersion >= versionNumber)
+				return $q.when(currentVersion);
+
     var queries = [
       "ALTER TABLE person ADD address VARCHAR(100)",
       "ALTER TABLE pet ADD ownerId INTEGER"
@@ -61,7 +117,9 @@ angular.module('starter', ['ionic', 'ngCordova'])
 			}, $q.when())
 			.then(function() {
 				LoggingService.log("Version 2 migration executed");
+        return versionNumber;
 			})
+      .then(storeVersionInHistoryTable)
       .catch(function(error) {
         LoggingService.log("Error: " + JSON.stringify(error));
       });
@@ -73,6 +131,8 @@ angular.module('starter', ['ionic', 'ngCordova'])
     db = $cordovaSQLite.openDB({ name: "my.db", bgType: 1 });
 
     var versionsToMigrate = [
+      createVersionHistoryTable,
+      selectCurrentVersion,
       version1,
       version2
     ];
