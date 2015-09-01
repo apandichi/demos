@@ -13,7 +13,12 @@ angular.module('starter', ['ionic', 'ngCordova'])
 })
 
 .service('DatabaseService', function($ionicPlatform, $cordovaSQLite, LoggingService, $q) {
-  var db;
+	var db;
+
+	window.document.addEventListener('deviceready', function() {
+		db = $cordovaSQLite.openDB({ name: "mydb", bgType: 1 });
+	}, false);
+  
 
   var executeInChain = function(queries) {
     var promise = queries.reduce(function(previous, query) {
@@ -62,7 +67,7 @@ angular.module('starter', ['ionic', 'ngCordova'])
   };
 
   this.migrate = function() {
-    db = $cordovaSQLite.openDB({ name: "my.db", bgType: 1 });
+    
 
     var initialSteps = [
       createVersionHistoryTable,
@@ -117,6 +122,27 @@ angular.module('starter', ['ionic', 'ngCordova'])
     });
 
   };
+  
+  this.insertPerson = function(firstname, lastname, address) {
+    var query = "INSERT INTO person (firstname, lastname, address) VALUES (?, ?, ?)";
+    var args = [firstname, lastname, address]
+	var promise = $cordovaSQLite.execute(db, query, args)
+      .then(function(result) {
+		return result.insertId;
+	  });
+	return promise;
+  };
+  
+  this.selectPerson = function(id) {
+    var query = "SELECT * FROM person WHERE id = ?";
+	var promise = $cordovaSQLite.execute(db, query, [id])
+      .then(function(result) {
+		var person = result.rows.item(0);
+		return person;
+	  });
+	return promise;
+  };
+  
   return this;
 })
 
