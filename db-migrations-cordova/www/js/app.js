@@ -7,54 +7,54 @@ angular.module('starter', ['ionic', 'ngCordova'])
 
 .service('LoggingService', function($rootScope) {
   this.log = function(message) {
-      $rootScope.$broadcast('log', message);
+    $rootScope.$broadcast('log', message);
   };
   return this;
 })
 
 .service('DatabaseService', function($ionicPlatform, $cordovaSQLite, LoggingService, $q) {
-	var db;
+  var db;
 
-	window.document.addEventListener('deviceready', function() {
-		db = $cordovaSQLite.openDB({ name: "mydb", bgType: 1 });
-	}, false);
+  window.document.addEventListener('deviceready', function() {
+    db = $cordovaSQLite.openDB({ name: "mydb", bgType: 1 });
+  }, false);
   
 
   var executeInChain = function(queries) {
     var promise = queries.reduce(function(previous, query) {
-			LoggingService.log("chaining " + query);
-			return previous.then(function() {
+      LoggingService.log("chaining " + query);
+      return previous.then(function() {
         LoggingService.log("executing " + query);
-				return $cordovaSQLite.execute(db, query, [])
-					.then(function(result) {
-						LoggingService.log(" done " + JSON.stringify(query));
-						return $q.when(query);
-					});
-			});
-		}, $q.when());
+        return $cordovaSQLite.execute(db, query, [])
+          .then(function(result) {
+            LoggingService.log(" done " + JSON.stringify(query));
+            return $q.when(query);
+          });
+      });
+    }, $q.when());
     return promise;
   };
 
   var selectCurrentVersion = function() {
-		var query = "SELECT MAX(versionNumber) AS maxVersion FROM version_history";
-		var promise = $cordovaSQLite.execute(db, query)
-			.then(function(res) {
-				var maxVersion = res.rows.item(0).maxVersion;
-				LoggingService.log("Current version is " + maxVersion);
-				return maxVersion;
-			});
-		return promise;
-	};
+    var query = "SELECT MAX(versionNumber) AS maxVersion FROM version_history";
+    var promise = $cordovaSQLite.execute(db, query)
+      .then(function(res) {
+        var maxVersion = res.rows.item(0).maxVersion;
+        LoggingService.log("Current version is " + maxVersion);
+        return maxVersion;
+      });
+    return promise;
+  };
 
   var storeVersionInHistoryTable = function(versionNumber) {
-		var query = "INSERT INTO version_history (versionNumber, migratedAt) VALUES (?, ?)";
-		var promise = $cordovaSQLite.execute(db, query, [versionNumber, new Date()])
-			.then(function(res) {
-				LoggingService.log("Stored version in history table: " + versionNumber);
-				return versionNumber;
-			});
-		return promise;
-	};
+    var query = "INSERT INTO version_history (versionNumber, migratedAt) VALUES (?, ?)";
+    var promise = $cordovaSQLite.execute(db, query, [versionNumber, new Date()])
+      .then(function(res) {
+        LoggingService.log("Stored version in history table: " + versionNumber);
+        return versionNumber;
+      });
+    return promise;
+  };
 
   var createVersionHistoryTable = function() {
     var query = "CREATE TABLE IF NOT EXISTS version_history(versionNumber INTEGER PRIMARY KEY NOT NULL, migratedAt DATE)";
@@ -62,7 +62,7 @@ angular.module('starter', ['ionic', 'ngCordova'])
     .then(function() {
       var versionNumber = 0;
       return versionNumber;
-		});
+    });
     return promise;
   };
 
@@ -98,12 +98,12 @@ angular.module('starter', ['ionic', 'ngCordova'])
     var migrationSteps = versions.map(function(version) {
       return function(currentVersion) {
         if (currentVersion >= version.versionNumber)
-  				return $q.when(currentVersion);
+          return $q.when(currentVersion);
 
         var promise = executeInChain(version.queries).then(function() {
-    			LoggingService.log("Version "+version.versionNumber+" migration executed");
+          LoggingService.log("Version "+version.versionNumber+" migration executed");
           return version.versionNumber;
-    		})
+        })
         .then(storeVersionInHistoryTable);
 
         return promise;
@@ -112,10 +112,10 @@ angular.module('starter', ['ionic', 'ngCordova'])
 
     var steps = initialSteps.concat(migrationSteps);
     steps.reduce(function(current, next) {
-			return current.then(next);
-		}, $q.when())
-		.then(function() {
-			LoggingService.log("All migrations executed");
+      return current.then(next);
+    }, $q.when())
+    .then(function() {
+      LoggingService.log("All migrations executed");
     })
     .catch(function(error) {
       LoggingService.log("Error: " + JSON.stringify(error));
@@ -126,21 +126,21 @@ angular.module('starter', ['ionic', 'ngCordova'])
   this.insertPerson = function(firstname, lastname, address) {
     var query = "INSERT INTO person (firstname, lastname, address) VALUES (?, ?, ?)";
     var args = [firstname, lastname, address]
-	var promise = $cordovaSQLite.execute(db, query, args)
+    var promise = $cordovaSQLite.execute(db, query, args)
       .then(function(result) {
-		return result.insertId;
-	  });
-	return promise;
+        return result.insertId;
+      });
+    return promise;
   };
   
   this.selectPerson = function(id) {
     var query = "SELECT * FROM person WHERE id = ?";
-	var promise = $cordovaSQLite.execute(db, query, [id])
+    var promise = $cordovaSQLite.execute(db, query, [id])
       .then(function(result) {
-		var person = result.rows.item(0);
-		return person;
-	  });
-	return promise;
+        var person = result.rows.item(0);
+        return person;
+      });
+    return promise;
   };
   
   return this;

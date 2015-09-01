@@ -20,8 +20,8 @@ describe('app', function() {
 
   describe("DatabaseService", function() {
 
-    beforeAll(function() {	  
-	  // replace sqlitePlugin with websql
+    beforeAll(function() {    
+    // replace sqlitePlugin with websql
       device = {};
       window.sqlitePlugin = {};
       window.sqlitePlugin.openDatabase = function() {
@@ -45,27 +45,27 @@ describe('app', function() {
       };
 
       $.ajax({
-		url: 'https://cdn.rawgit.com/apandichi/demos/eaf2109abc17f90f6cad8340e0b491eca90aa766/db-migrations-cordova/www/spec/db-schema.sql',
-		type: 'get',
-		async: false,
-		success: function(response) {
+        url: 'https://cdn.rawgit.com/apandichi/demos/eaf2109abc17f90f6cad8340e0b491eca90aa766/db-migrations-cordova/www/spec/db-schema.sql',
+        type: 'get',
+        async: false,
+        success: function(response) {
           var db = openDatabase('mydb', '1.0', 'myDatabase', 10000000);
           processQuery(db, response.split(';\n'), 'myDatabase');
         },
         error: function(response) {
           console.log("error!", JSON.stringify(response));
         }
-	  });
+      });
     });
 
     var DatabaseService;
 
     beforeEach(function() {        
       angular.mock.module("starter");
-	  angular.mock.module(function ($provide) {
-	    $provide.value('$q', Q);
-	  });
-		
+      angular.mock.module(function ($provide) {
+        $provide.value('$q', Q);
+      });
+    
       inject(function(_DatabaseService_) {
         DatabaseService = _DatabaseService_;
         helper.trigger(window.document, 'deviceready');
@@ -74,10 +74,11 @@ describe('app', function() {
 
     it("should save person into the database", function() {
       runs(function() {
-        return DatabaseService.insertPerson("Jon", "Arbuckle", "Somewhere in the US")
-        .then(function (insertId) {
-			return DatabaseService.selectPerson(insertId)
-		});
+        var promise = DatabaseService.insertPerson("Jon", "Arbuckle", "Somewhere in the US")
+          .then(function (insertId) {
+            return DatabaseService.selectPerson(insertId)
+          });
+        return promise;
       }, function(result) {
         expect(result.firstname).toBe("Jon");
         expect(result.lastname).toBe("Arbuckle");
